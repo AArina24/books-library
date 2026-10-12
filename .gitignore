@@ -18,3 +18,4 @@ db.sqlite3
 
 # Папка с загруженными файлами
 media/
+!media/.gitkeep
