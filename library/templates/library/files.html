@@ -1,0 +1,35 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Список файлов{% endblock %}
+
+{% block content %}
+<h2>Список файлов</h2>
+
+{% if files %}
+<table class="files-table">
+    <thead>
+        <tr>
+            <th>Имя файла</th>
+            <th>Тип</th>
+            <th>Размер</th>
+            <th>Действие</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for file in files %}
+        <tr>
+            <td>{{ file.name }}</td>
+            <td><span class="badge badge-{{ file.type|lower }}">{{ file.type }}</span></td>
+            <td>{{ file.size }} байт</td>
+            <td><a href="{% url 'file_detail' file.name %}" class="btn-view">Просмотр</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-message">
+    <p>📭 Файлов пока нет.</p>
+    <p>Добавьте книгу через форму или загрузите готовый файл.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Загрузить файл{% endblock %}
+
+{% block content %}
+<h2>Загрузить файл JSON или XML</h2>
+
+<p class="hint">
+    Выберите файл с данными о книгах. Поддерживаются форматы .json и .xml.
+    Файл будет проверен на валидность.
+</p>
+
+<form method="post" enctype="multipart/form-data" class="upload-form">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="file">Выберите файл:</label>
+        <input type="file" name="file" id="file" accept=".json,.xml" required>
+    </div>
+    <button type="submit" class="btn-save">Загрузить</button>
+</form>
+{% endblock %}

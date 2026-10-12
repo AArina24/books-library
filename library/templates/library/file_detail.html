@@ -1,0 +1,36 @@
+{% extends 'library/base.html' %}
+
+{% block title %}{{ filename }}{% endblock %}
+
+{% block content %}
+<h2>Файл: {{ filename }}</h2>
+
+<a href="{% url 'files' %}" class="btn-back">← Назад к списку</a>
+
+<h3>Книги в файле:</h3>
+<table class="files-table">
+    <thead>
+        <tr>
+            <th>Название</th>
+            <th>Автор</th>
+            <th>Год</th>
+            <th>Жанр</th>
+            <th>Страниц</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for book in books %}
+        <tr>
+            <td>{{ book.title }}</td>
+            <td>{{ book.author }}</td>
+            <td>{{ book.year }}</td>
+            <td>{{ book.genre }}</td>
+            <td>{{ book.pages }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3>Исходное содержимое файла:</h3>
+<pre class="raw-content">{{ content }}</pre>
+{% endblock %}

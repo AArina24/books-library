@@ -1,0 +1,35 @@
+{% extends 'library/base.html' %}
+
+{% block title %}Добавить книгу{% endblock %}
+
+{% block content %}
+<h2>Добавить книгу</h2>
+
+<form method="post" class="book-form">
+    {% csrf_token %}
+
+    {% for field in form %}
+    <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+        {{ field }}
+        {% if field.errors %}
+        <div class="field-errors">
+            {% for error in field.errors %}
+            <span class="error">{{ error }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <div class="form-group">
+        <label>Формат файла:</label>
+        <div class="radio-group">
+            <label><input type="radio" name="file_format" value="json" checked> JSON</label>
+            <label><input type="radio" name="file_format" value="xml"> XML</label>
+        </div>
+    </div>
+
+    <button type="submit" class="btn-save">Сохранить книгу</button>
+</form>
+{% endblock %}
