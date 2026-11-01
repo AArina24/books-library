@@ -1,0 +1,25 @@
+{% extends 'library/base.html' %}
+{% block title %}Редактировать книгу{% endblock %}
+
+{% block content %}
+<h2>✏️ Редактировать: {{ book.title }}</h2>
+
+<form method="post" class="book-form">
+    {% csrf_token %}
+
+    {% for field in form %}
+    <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}:</label>
+        {{ field }}
+        {% if field.errors %}
+            {% for error in field.errors %}
+                <span class="error">{{ error }}</span>
+            {% endfor %}
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <button type="submit" class="btn-save">Сохранить изменения</button>
+    <a href="{% url 'db_list' %}" style="margin-left: 15px;">Отмена</a>
+</form>
+{% endblock %}

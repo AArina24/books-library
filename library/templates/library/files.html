@@ -21,7 +21,14 @@
             <td>{{ file.name }}</td>
             <td><span class="badge badge-{{ file.type|lower }}">{{ file.type }}</span></td>
             <td>{{ file.size }} байт</td>
-            <td><a href="{% url 'file_detail' file.name %}" class="btn-view">Просмотр</a></td>
+            <td>
+                <a href="{% url 'file_detail' file.name %}" class="btn-view">Просмотр</a>
+
+                <form method="post" action="{% url 'delete_file' file.name %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-delete" onclick="return confirm('Удалить файл {{ file.name }}?')">Удалить</button>
+                </form>
+            </td>
         </tr>
         {% endfor %}
     </tbody>

@@ -2,42 +2,32 @@ import json
 import xml.etree.ElementTree as ET
 import os
 import uuid
-import re
+
 from django.conf import settings
 
-# Путь к папке с файлами
 MEDIA_DIR = os.path.join(settings.BASE_DIR, 'media')
 
 
 def safe_filename(original_name):
-    """
-    Генерирует безопасное имя файла.
-    Никогда не доверяем имени от пользователя!
-    """
-    # Берём только расширение (.json или .xml)
     ext = os.path.splitext(original_name)[1].lower()
     if ext not in ['.json', '.xml']:
-        ext = '.json'  # по умолчанию
+        ext = '.json'
 
-    # Генерируем уникальное имя через UUID
     return f"{uuid.uuid4().hex}{ext}"
 
 
 def save_book_to_json(book_data, filename=None):
-    """Сохраняет книгу в JSON-файл"""
     if not filename:
         filename = f"book_{uuid.uuid4().hex[:8]}.json"
 
     filepath = os.path.join(MEDIA_DIR, filename)
 
-    # Если файл существует — читаем, иначе создаём пустой список
     if os.path.exists(filepath):
         with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
     else:
         data = []
 
-    # Добавляем новую книгу
     data.append(book_data)
 
     # Записываем обратно
@@ -48,13 +38,11 @@ def save_book_to_json(book_data, filename=None):
 
 
 def save_book_to_xml(book_data, filename=None):
-    """Сохраняет книгу в XML-файл"""
     if not filename:
         filename = f"book_{uuid.uuid4().hex[:8]}.xml"
 
     filepath = os.path.join(MEDIA_DIR, filename)
 
-    # Если файл существует — читаем
     if os.path.exists(filepath):
         tree = ET.parse(filepath)
         root = tree.getroot()
@@ -62,20 +50,17 @@ def save_book_to_xml(book_data, filename=None):
         root = ET.Element('books')
         tree = ET.ElementTree(root)
 
-    # Создаём элемент книги
     book_elem = ET.SubElement(root, 'book')
     for key, value in book_data.items():
         child = ET.SubElement(book_elem, key)
         child.text = str(value)
 
-    # Записываем
     tree.write(filepath, encoding='utf-8', xml_declaration=True)
 
     return filename
 
 
 def validate_json_file(filepath):
-    """Проверяет, валиден ли JSON-файл. Возвращает (успех, данные/ошибка)"""
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -99,7 +84,6 @@ def validate_json_file(filepath):
 
 
 def validate_xml_file(filepath):
-    """Проверяет, валиден ли XML-файл. Возвращает (успех, данные/ошибка)"""
     try:
         tree = ET.parse(filepath)
         root = tree.getroot()
@@ -150,3 +134,14 @@ def read_file_content(filepath):
             return True, f.read()
     except Exception as e:
         return False, str(e)
+
+
+def delete_file(filename):
+    filepath = os.path.join(MEDIA_DIR, filename)
+    if os.path.exists(filepath):
+        try:
+            os.remove(filepath)
+            return True, 'Файл успешно удалён'
+        except Exception as e:
+            return False, f'Ошибка при удалении: {e}'
+    return False, 'Файл не найден'

@@ -2,7 +2,6 @@ from django import forms
 
 
 class BookForm(forms.Form):
-    """Форма для ввода информации о книге"""
 
     title = forms.CharField(
         max_length=200,

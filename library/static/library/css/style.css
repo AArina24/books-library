@@ -255,6 +255,22 @@ h3 {
     margin-bottom: 20px;
 }
 
+/* Кнопка удаления */
+.btn-delete {
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    margin-left: 10px;
+}
+
+.btn-delete:hover {
+    background: #ff4757;
+}
+
 /* Пустое сообщение */
 .empty-message {
     background: white;

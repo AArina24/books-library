@@ -1,0 +1,94 @@
+{% extends 'library/base.html' %}
+{% block title %}Книги в базе данных{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2>Книги в базе данных (SQLite)</h2>
+</div>
+
+<div class="form-group" style="max-width: 400px; margin-bottom: 20px;">
+    <input type="text" id="search-input" class="form-input" placeholder="🔍 Поиск по названию или автору...">
+</div>
+
+{% if books %}
+<table class="files-table" id="books-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Название</th>
+            <th>Автор</th>
+            <th>Год</th>
+            <th>Жанр</th>
+            <th>Страниц</th>
+            <th>Действие</th>
+        </tr>
+    </thead>
+    <tbody id="books-tbody">
+        {% for book in books %}
+        <tr>
+            <td>{{ book.id }}</td>
+            <td>{{ book.title }}</td>
+            <td>{{ book.author }}</td>
+            <td>{{ book.year }}</td>
+            <td>{{ book.genre }}</td>
+            <td>{{ book.pages }}</td>
+            <td>
+                <a href="{% url 'edit_book' book.id %}" class="btn-view">✏️ Ред.</a>
+                <form method="post" action="{% url 'delete_book_db' book.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-delete" onclick="return confirm('Удалить книгу?')">🗑️ Удал.</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<p id="no-results" style="display:none; text-align:center; padding:20px; color:#b08a95;">Ничего не найдено 😔</p>
+{% else %}
+<div class="empty-message">
+    <p>📭 В базе данных пока нет книг.</p>
+</div>
+{% endif %}
+
+<script>
+    const searchInput = document.getElementById('search-input');
+    const tbody = document.getElementById('books-tbody');
+    const noResults = document.getElementById('no-results');
+    let timeoutId;
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            const query = searchInput.value;
+            fetch(`/db/search/?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    tbody.innerHTML = '';
+                    if (data.books.length === 0) {
+                        noResults.style.display = 'block';
+                    } else {
+                        noResults.style.display = 'none';
+                        data.books.forEach(book => {
+                            const row = `<tr>
+                                <td>${book.id}</td>
+                                <td>${book.title}</td>
+                                <td>${book.author}</td>
+                                <td>${book.year}</td>
+                                <td>${book.genre}</td>
+                                <td>${book.pages}</td>
+                                <td>
+                                    <a href="/db/edit/${book.id}/" class="btn-view">✏️ Ред.</a>
+                                    <form method="post" action="/db/delete/${book.id}/" style="display:inline;">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                        <button type="submit" class="btn-delete" onclick="return confirm('Удалить книгу?')">🗑️ Удал.</button>
+                                    </form>
+                                </td>
+                            </tr>`;
+                            tbody.innerHTML += row;
+                        });
+                    }
+                });
+        }, 300);
+    });
+</script>
+{% endblock %}

@@ -23,12 +23,33 @@
     {% endfor %}
 
     <div class="form-group">
-        <label>Формат файла:</label>
-        <div class="radio-group">
-            <label><input type="radio" name="file_format" value="json" checked> JSON</label>
-            <label><input type="radio" name="file_format" value="xml"> XML</label>
-        </div>
+    <label>Куда сохранить:</label>
+    <div class="radio-group">
+        <label><input type="radio" name="save_to" value="file" checked> В файл</label>
+        <label><input type="radio" name="save_to" value="db"> В базу данных</label>
     </div>
+</div>
+
+<div class="form-group" id="format-group">
+    <label>Формат файла:</label>
+    <div class="radio-group">
+        <label><input type="radio" name="file_format" value="json" checked> JSON</label>
+        <label><input type="radio" name="file_format" value="xml"> XML</label>
+    </div>
+</div>
+
+    <script>
+    const saveToRadios = document.querySelectorAll('input[name="save_to"]');
+    const formatGroup = document.getElementById('format-group');
+
+    function toggleFormatGroup() {
+        const selected = document.querySelector('input[name="save_to"]:checked').value;
+        formatGroup.style.display = (selected === 'file') ? 'block' : 'none';
+    }
+
+    saveToRadios.forEach(radio => radio.addEventListener('change', toggleFormatGroup));
+    toggleFormatGroup();
+</script>
 
     <button type="submit" class="btn-save">Сохранить книгу</button>
 </form>

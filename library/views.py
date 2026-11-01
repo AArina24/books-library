@@ -1,3 +1,4 @@
+from .models import Book
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import BookForm
@@ -9,6 +10,7 @@ from .utils import (
     get_all_files,
     read_file_content,
     safe_filename,
+    delete_file,
     MEDIA_DIR,
 )
 import os
@@ -19,7 +21,6 @@ def index(request):
     if request.method == 'POST':
         form = BookForm(request.POST)
         if form.is_valid():
-            # Получаем очищенные данные
             book_data = {
                 'title': form.cleaned_data['title'],
                 'author': form.cleaned_data['author'],
@@ -28,15 +29,32 @@ def index(request):
                 'pages': form.cleaned_data['pages'],
             }
 
-            # Формат выбирает пользователь
-            file_format = request.POST.get('file_format', 'json')
+            save_to = request.POST.get('save_to', 'file')
 
-            if file_format == 'json':
-                filename = save_book_to_json(book_data)
-                messages.success(request, f'Книга сохранена в JSON: {filename}')
+            if save_to == 'db':
+                # Проверка на дубликат: ищем книгу с такими же данными
+                existing = Book.objects.filter(
+                    title=book_data['title'],
+                    author=book_data['author'],
+                    year=book_data['year'],
+                    genre=book_data['genre'],
+                    pages=book_data['pages'],
+                ).first()
+
+                if existing:
+                    messages.error(request, 'Такая книга уже есть в базе данных!')
+                else:
+                    Book.objects.create(**book_data)
+                    messages.success(request, 'Книга сохранена в базу данных')
             else:
-                filename = save_book_to_xml(book_data)
-                messages.success(request, f'Книга сохранена в XML: {filename}')
+                # Сохранение в файл (старая логика)
+                file_format = request.POST.get('file_format', 'json')
+                if file_format == 'json':
+                    filename = save_book_to_json(book_data)
+                    messages.success(request, f'Книга сохранена в JSON: {filename}')
+                else:
+                    filename = save_book_to_xml(book_data)
+                    messages.success(request, f'Книга сохранена в XML: {filename}')
 
             return redirect('index')
     else:
@@ -46,7 +64,6 @@ def index(request):
 
 
 def upload_file(request):
-    """Загрузка файла JSON/XML на сервер"""
     if request.method == 'POST':
         uploaded_file = request.FILES.get('file')
 
@@ -60,23 +77,19 @@ def upload_file(request):
             messages.error(request, 'Допустимы только файлы JSON и XML')
             return redirect('upload')
 
-        # Генерируем безопасное имя
         safe_name = safe_filename(uploaded_file.name)
         filepath = os.path.join(MEDIA_DIR, safe_name)
 
-        # Сохраняем файл
         with open(filepath, 'wb+') as destination:
             for chunk in uploaded_file.chunks():
                 destination.write(chunk)
 
-        # Проверяем валидность
         if ext == '.json':
             is_valid, result = validate_json_file(filepath)
         else:
             is_valid, result = validate_xml_file(filepath)
 
         if not is_valid:
-            # Удаляем невалидный файл
             os.remove(filepath)
             messages.error(request, f'Файл невалиден: {result}')
             return redirect('upload')
@@ -101,13 +114,11 @@ def file_detail(request, filename):
         messages.error(request, 'Файл не найден')
         return redirect('files')
 
-    # Читаем содержимое
     ok, content = read_file_content(filepath)
     if not ok:
         messages.error(request, f'Ошибка чтения: {content}')
         return redirect('files')
 
-    # Парсим данные для красивого вывода
     if filename.endswith('.json'):
         is_valid, data = validate_json_file(filepath)
     else:
@@ -122,3 +133,85 @@ def file_detail(request, filename):
         'content': content,
         'books': data,
     })
+def delete_file_view(request, filename):
+    if request.method == 'POST':
+        ok, message = delete_file(filename)
+        if ok:
+            messages.success(request, message)
+        else:
+            messages.error(request, message)
+    return redirect('files')
+
+def db_list(request):
+    """Список книг из базы данных"""
+    books = Book.objects.all().order_by('-id') # Сначала новые
+    return render(request, 'library/db_list.html', {'books': books})
+
+
+from django.http import JsonResponse
+
+
+def db_search_ajax(request):
+    """AJAX-поиск по книгам в БД"""
+    query = request.GET.get('q', '')
+    if query:
+        # Ищем по названию или автору (icontains = без учета регистра)
+        books = Book.objects.filter(
+            title__icontains=query
+        ) | Book.objects.filter(
+            author__icontains=query
+        )
+    else:
+        books = Book.objects.all()
+
+    data = []
+    for book in books.order_by('-id'):
+        data.append({
+            'id': book.id,
+            'title': book.title,
+            'author': book.author,
+            'year': book.year,
+            'genre': book.genre,
+            'pages': book.pages,
+        })
+
+    return JsonResponse({'books': data})
+
+
+from django.shortcuts import get_object_or_404
+
+
+def edit_book(request, book_id):
+    """Редактирование книги в БД"""
+    book = get_object_or_404(Book, id=book_id)
+
+    if request.method == 'POST':
+        form = BookForm(request.POST)
+        if form.is_valid():
+            book.title = form.cleaned_data['title']
+            book.author = form.cleaned_data['author']
+            book.year = form.cleaned_data['year']
+            book.genre = form.cleaned_data['genre']
+            book.pages = form.cleaned_data['pages']
+            book.save()
+            messages.success(request, 'Книга обновлена!')
+            return redirect('db_list')
+    else:
+        # Заполняем форму текущими данными книги
+        form = BookForm(initial={
+            'title': book.title,
+            'author': book.author,
+            'year': book.year,
+            'genre': book.genre,
+            'pages': book.pages,
+        })
+
+    return render(request, 'library/edit_book.html', {'form': form, 'book': book})
+
+def delete_book_db(request, book_id):
+    """Удаление книги из БД"""
+    book = get_object_or_404(Book, id=book_id)
+    if request.method == 'POST':
+        book.delete()
+        messages.success(request, 'Книга удалена из базы данных')
+    return redirect('db_list')
